@@ -2345,6 +2345,9 @@ module.exports = anime;
 	var RGBA_PVRTC_4BPPV1_Format = 35842;
 	var RGBA_PVRTC_2BPPV1_Format = 35843;
 	var RGB_ETC1_Format = 36196;
+	var RGB_ETC2_Format = 37492;
+	var RGBA_BPTC_Format = 36492;
+	var RGBA_ETC2_EAC_Format = 37496;
 	var RGBA_ASTC_4x4_Format = 37808;
 	var RGBA_ASTC_5x4_Format = 37809;
 	var RGBA_ASTC_5x5_Format = 37810;
@@ -18605,6 +18608,45 @@ module.exports = anime;
 
 		return {
 
+			has: function ( name ) {
+
+				if ( extensions[ name ] !== undefined ) {
+
+					return extensions[ name ] !== null;
+
+				}
+
+				var extension;
+
+				switch ( name ) {
+
+					case 'WEBGL_depth_texture':
+						extension = gl.getExtension( 'WEBGL_depth_texture' ) || gl.getExtension( 'MOZ_WEBGL_depth_texture' ) || gl.getExtension( 'WEBKIT_WEBGL_depth_texture' );
+						break;
+
+					case 'EXT_texture_filter_anisotropic':
+						extension = gl.getExtension( 'EXT_texture_filter_anisotropic' ) || gl.getExtension( 'MOZ_EXT_texture_filter_anisotropic' ) || gl.getExtension( 'WEBKIT_EXT_texture_filter_anisotropic' );
+						break;
+
+					case 'WEBGL_compressed_texture_s3tc':
+						extension = gl.getExtension( 'WEBGL_compressed_texture_s3tc' ) || gl.getExtension( 'MOZ_WEBGL_compressed_texture_s3tc' ) || gl.getExtension( 'WEBKIT_WEBGL_compressed_texture_s3tc' );
+						break;
+
+					case 'WEBGL_compressed_texture_pvrtc':
+						extension = gl.getExtension( 'WEBGL_compressed_texture_pvrtc' ) || gl.getExtension( 'WEBKIT_WEBGL_compressed_texture_pvrtc' );
+						break;
+
+					default:
+						extension = gl.getExtension( name );
+
+				}
+
+				extensions[ name ] = extension;
+
+				return extension !== null;
+
+			},
+
 			get: function ( name ) {
 
 				if ( extensions[ name ] !== undefined ) {
@@ -25588,6 +25630,24 @@ module.exports = anime;
 
 			}
 
+			if ( p === RGBA_BPTC_Format ) {
+
+				extension = extensions.get( 'EXT_texture_compression_bptc' );
+
+				if ( extension !== null ) {
+
+					// TODO Complete?
+
+					return p;
+
+				} else {
+
+					return null;
+
+				}
+
+			}
+
 			if ( p === UnsignedInt248Type ) {
 
 				if ( isWebGL2 ) { return 34042; }
@@ -26462,7 +26522,7 @@ module.exports = anime;
 		cameraVR.layers.enable( 1 );
 		cameraVR.layers.enable( 2 );
 
-		var poseMatrix = new THREE.Matrix4();
+		var poseMatrix = new Matrix4();
 
 		//
 
@@ -43995,6 +44055,8 @@ module.exports = anime;
 
 		constructor: ImageBitmapLoader,
 
+		isImageBitmapLoader: true,
+
 		setOptions: function setOptions( options ) {
 
 			this.options = options;
@@ -53531,6 +53593,8 @@ module.exports = anime;
 	exports.RGBA_ASTC_8x5_Format = RGBA_ASTC_8x5_Format;
 	exports.RGBA_ASTC_8x6_Format = RGBA_ASTC_8x6_Format;
 	exports.RGBA_ASTC_8x8_Format = RGBA_ASTC_8x8_Format;
+	exports.RGBA_BPTC_Format = RGBA_BPTC_Format;
+	exports.RGBA_ETC2_EAC_Format = RGBA_ETC2_EAC_Format;
 	exports.RGBA_PVRTC_2BPPV1_Format = RGBA_PVRTC_2BPPV1_Format;
 	exports.RGBA_PVRTC_4BPPV1_Format = RGBA_PVRTC_4BPPV1_Format;
 	exports.RGBA_S3TC_DXT1_Format = RGBA_S3TC_DXT1_Format;
@@ -53543,6 +53607,7 @@ module.exports = anime;
 	exports.RGBM16Encoding = RGBM16Encoding;
 	exports.RGBM7Encoding = RGBM7Encoding;
 	exports.RGB_ETC1_Format = RGB_ETC1_Format;
+	exports.RGB_ETC2_Format = RGB_ETC2_Format;
 	exports.RGB_PVRTC_2BPPV1_Format = RGB_PVRTC_2BPPV1_Format;
 	exports.RGB_PVRTC_4BPPV1_Format = RGB_PVRTC_4BPPV1_Format;
 	exports.RGB_S3TC_DXT1_Format = RGB_S3TC_DXT1_Format;
@@ -54322,7 +54387,7 @@ THREE.GLTFLoader = ( function () {
 		THREE.Loader.call( this, manager );
 
 		this.dracoLoader = null;
-		this.basisTextureLoader = null;
+		this.ktx2loader = null;
 		this.revokeObjectURLs = true;
 		this.ddsLoader = null;
 
@@ -54366,9 +54431,9 @@ THREE.GLTFLoader = ( function () {
 
 		},
 
-		setBasisTextureLoader: function ( loader ) {
+		setKTX2Loader: function ( loader ) {
 
-			this.basisTextureLoader = loader;
+			this.ktx2loader = loader;
 			return this;
 
 		},
@@ -54544,8 +54609,14 @@ THREE.GLTFLoader = ( function () {
 							extensions[ extensionName ] = new GLTFDracoMeshCompressionExtension( json, this.dracoLoader );
 							break;
 
+						case EXTENSIONS.KHR_TEXTURE_BASISU:
+							extensions[ extensionName ] = new GLTFKHRBasisTextureExtension( this.ktx2loader );
+							break;
+
+						// TODO we eventaully want to remove support for this
 						case EXTENSIONS.MOZ_HUBS_TEXTURE_BASIS:
-							extensions[ extensionName ] = new GLTFHubsBasisTextureExtension( this.basisTextureLoader );
+							extensions[ extensionName ] = new GLTFHubsBasisTextureExtension( this.ktx2loader && this.ktx2loader.basisLoader );
+							console.warn( `The ${EXTENSIONS.MOZ_HUBS_TEXTURE_BASIS} extension is deprecated, you should use ${EXTENSIONS.KHR_TEXTURE_BASISU} instead` );
 							break;
 
 						case EXTENSIONS.MSFT_TEXTURE_DDS:
@@ -54646,7 +54717,9 @@ THREE.GLTFLoader = ( function () {
 		KHR_TEXTURE_TRANSFORM: 'KHR_texture_transform',
 		KHR_MESH_QUANTIZATION: 'KHR_mesh_quantization',
 		MSFT_TEXTURE_DDS: 'MSFT_texture_dds',
-		MOZ_HUBS_TEXTURE_BASIS: "MOZ_HUBS_texture_basis"
+		// TODO we eventually want to remove suport for this in favor of the KHR extension
+		MOZ_HUBS_TEXTURE_BASIS: "MOZ_HUBS_texture_basis",
+		KHR_TEXTURE_BASISU: "KHR_texture_basisu"
 	};
 
 	/**
@@ -54860,12 +54933,25 @@ THREE.GLTFLoader = ( function () {
 
 		if ( ! loader ) {
 
-			throw new Error( 'THREE.GLTFLoader: No HubsBasisTextureLoader instance provided.' );
+			throw new Error( 'THREE.GLTFLoader: No BasisTextureLoader exists on the KTX2Loader or no KTX2Loader instance was provided.' );
 
 		}
 
-		this.name = EXTENSIONS.MOZ_HUBS_TEXTURE_BASIS
+		this.name = EXTENSIONS.MOZ_HUBS_TEXTURE_BASIS;
 		this.basisTextureLoader = loader;
+
+	}
+
+	function GLTFKHRBasisTextureExtension( loader ) {
+
+		if ( ! loader ) {
+
+			throw new Error( 'THREE.GLTFLoader: No KTX2Loader instance provided.' );
+
+		}
+
+		this.name = EXTENSIONS.KHR_TEXTURE_BASISU;
+		this.ktx2loader = loader;
 
 	}
 
@@ -56261,6 +56347,10 @@ THREE.GLTFLoader = ( function () {
 
 			source = json.images[ textureExtensions[ EXTENSIONS.MSFT_TEXTURE_DDS ].source ];
 
+		} else if ( textureExtensions[ EXTENSIONS.KHR_TEXTURE_BASISU ] ) {
+
+			source = json.images[ textureExtensions[ EXTENSIONS.KHR_TEXTURE_BASISU ].source ];
+
 		} else if ( textureExtensions[ EXTENSIONS.MOZ_HUBS_TEXTURE_BASIS ] ) {
 
 			source = json.images[ textureExtensions[ EXTENSIONS.MOZ_HUBS_TEXTURE_BASIS ].source ];
@@ -56297,11 +56387,23 @@ THREE.GLTFLoader = ( function () {
 
 			if ( ! loader ) {
 
-				loader = textureExtensions[ EXTENSIONS.MSFT_TEXTURE_DDS ]
-					? parser.extensions[ EXTENSIONS.MSFT_TEXTURE_DDS ].ddsLoader
-					: textureExtensions[ EXTENSIONS.MOZ_HUBS_TEXTURE_BASIS ]
-						? parser.extensions[ EXTENSIONS.MOZ_HUBS_TEXTURE_BASIS ].basisTextureLoader
-						: textureLoader;
+				if ( textureExtensions[ EXTENSIONS.MSFT_TEXTURE_DDS ] ) {
+
+					loader = parser.extensions[ EXTENSIONS.MSFT_TEXTURE_DDS ].ddsLoader;
+
+				} else if ( textureExtensions[ EXTENSIONS.KHR_TEXTURE_BASISU ] ) {
+
+					loader = parser.extensions[ EXTENSIONS.KHR_TEXTURE_BASISU ].ktx2loader;
+
+				} else if ( textureExtensions[ EXTENSIONS.MOZ_HUBS_TEXTURE_BASIS ] ) {
+
+					loader = parser.extensions[ EXTENSIONS.MOZ_HUBS_TEXTURE_BASIS ].basisTextureLoader;
+
+				} else {
+
+					loader = textureLoader;
+
+				}
 
 			}
 
@@ -56494,8 +56596,7 @@ THREE.GLTFLoader = ( function () {
 
 		if ( material.aoMap && geometry.attributes.uv2 === undefined && geometry.attributes.uv !== undefined ) {
 
-			console.log( 'THREE.GLTFLoader: Duplicating UVs to support aoMap.' );
-			geometry.setAttribute( 'uv2', new THREE.BufferAttribute( geometry.attributes.uv.array, 2 ) );
+			geometry.setAttribute( 'uv2', geometry.attributes.uv );
 
 		}
 
@@ -67330,17 +67431,17 @@ module.exports.Component = registerComponent('screenshot', {
    * Maintained for backwards compatibility.
    */
   capture: function (projection) {
-    var isVREnabled = this.el.renderer.xr.enabled;
+    var isVREnabled = this.el.renderer.xr && this.el.renderer.xr.enabled;
     var renderer = this.el.renderer;
     var params;
     // Disable VR.
-    renderer.xr.enabled = false;
+    if(isVREnabled) renderer.xr.enabled = false;
     params = this.setCapture(projection);
     this.renderCapture(params.camera, params.size, params.projection);
     // Trigger file download.
     this.saveCapture();
     // Restore VR.
-    renderer.xr.enabled = isVREnabled;
+    if(isVREnabled) renderer.xr.enabled = isVREnabled;
   },
 
   /**

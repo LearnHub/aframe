@@ -169,17 +169,17 @@ module.exports.Component = registerComponent('screenshot', {
    * Maintained for backwards compatibility.
    */
   capture: function (projection) {
-    var isVREnabled = this.el.renderer.xr.enabled;
+    var isVREnabled = this.el.renderer.xr && this.el.renderer.xr.enabled;
     var renderer = this.el.renderer;
     var params;
     // Disable VR.
-    renderer.xr.enabled = false;
+    if (isVREnabled) renderer.xr.enabled = false;
     params = this.setCapture(projection);
     this.renderCapture(params.camera, params.size, params.projection);
     // Trigger file download.
     this.saveCapture();
     // Restore VR.
-    renderer.xr.enabled = isVREnabled;
+    if (isVREnabled) renderer.xr.enabled = isVREnabled;
   },
 
   /**
