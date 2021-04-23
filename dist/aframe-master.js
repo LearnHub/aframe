@@ -67309,7 +67309,7 @@ module.exports.Component = registerComponent('screenshot', {
   schema: {
     width: {default: 4096},
     height: {default: 2048},
-    format: {default: "png"},
+    format: {default: 'png'},
     camera: {type: 'selector'}
   },
 
@@ -67424,7 +67424,8 @@ module.exports.Component = registerComponent('screenshot', {
     return {
       camera: camera,
       size: size,
-      projection: projection
+      projection: projection,
+      format: this.data.format
     };
   },
 
@@ -67440,7 +67441,7 @@ module.exports.Component = registerComponent('screenshot', {
     params = this.setCapture(projection);
     this.renderCapture(params.camera, params.size, params.projection);
     // Trigger file download.
-    this.saveCapture();
+    this.saveCapture(params.format);
     // Restore VR.
     if (isVREnabled) renderer.xr.enabled = isVREnabled;
   },
@@ -67460,7 +67461,7 @@ module.exports.Component = registerComponent('screenshot', {
     return this.canvas;
   },
 
-  renderCapture: function (camera, size, projection) {
+  renderCapture: function (camera, size, projection, format) {
     var autoClear = this.el.renderer.autoClear;
     var el = this.el;
     var imageData;
@@ -67507,9 +67508,9 @@ module.exports.Component = registerComponent('screenshot', {
   /**
    * Download capture to file.
    */
-  saveCapture: function () {
+  saveCapture: function (format) {
     this.canvas.toBlob(function (blob) {
-      var fileName = 'screenshot-' + document.title.toLowerCase() + '-' + Date.now() + '.' + this.data.format;
+      var fileName = 'screenshot-' + document.title.toLowerCase() + '-' + Date.now() + '.' + format;
       var linkEl = document.createElement('a');
       var url = URL.createObjectURL(blob);
       linkEl.href = url;
@@ -67521,7 +67522,7 @@ module.exports.Component = registerComponent('screenshot', {
         linkEl.click();
         document.body.removeChild(linkEl);
       }, 1);
-    }, 'image/' + this.data.format);
+    }, 'image/' + format);
   }
 });
 
