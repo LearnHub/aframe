@@ -67309,6 +67309,7 @@ module.exports.Component = registerComponent('screenshot', {
   schema: {
     width: {default: 4096},
     height: {default: 2048},
+    format: {default: "png"},
     camera: {type: 'selector'}
   },
 
@@ -67435,13 +67436,13 @@ module.exports.Component = registerComponent('screenshot', {
     var renderer = this.el.renderer;
     var params;
     // Disable VR.
-    if(isVREnabled) renderer.xr.enabled = false;
+    if (isVREnabled) renderer.xr.enabled = false;
     params = this.setCapture(projection);
     this.renderCapture(params.camera, params.size, params.projection);
     // Trigger file download.
     this.saveCapture();
     // Restore VR.
-    if(isVREnabled) renderer.xr.enabled = isVREnabled;
+    if (isVREnabled) renderer.xr.enabled = isVREnabled;
   },
 
   /**
@@ -67508,7 +67509,7 @@ module.exports.Component = registerComponent('screenshot', {
    */
   saveCapture: function () {
     this.canvas.toBlob(function (blob) {
-      var fileName = 'screenshot-' + document.title.toLowerCase() + '-' + Date.now() + '.png';
+      var fileName = 'screenshot-' + document.title.toLowerCase() + '-' + Date.now() + '.' + this.data.format;
       var linkEl = document.createElement('a');
       var url = URL.createObjectURL(blob);
       linkEl.href = url;
@@ -67520,7 +67521,7 @@ module.exports.Component = registerComponent('screenshot', {
         linkEl.click();
         document.body.removeChild(linkEl);
       }, 1);
-    }, 'image/png');
+    }, 'image/' + this.data.format);
   }
 });
 
