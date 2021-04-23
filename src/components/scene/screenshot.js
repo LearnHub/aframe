@@ -199,7 +199,7 @@ module.exports.Component = registerComponent('screenshot', {
     return this.canvas;
   },
 
-  renderCapture: function (camera, size, projection, format) {
+  renderCapture: function (camera, size, projection) {
     var autoClear = this.el.renderer.autoClear;
     var el = this.el;
     var imageData;
