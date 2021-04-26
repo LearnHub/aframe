@@ -854,6 +854,8 @@ module.exports.AScene = registerElement('a-scene', {
           this.object3D.background = null;
         }
         renderer.render(this.object3D, this.camera);
+        // AVN: Required for screenshot functionality to ensure active screen buffer
+        this.emit('renderer.render.end');
         if (savedBackground) {
           this.object3D.background = savedBackground;
         }
