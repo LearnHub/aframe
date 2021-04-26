@@ -630,7 +630,7 @@ module.exports.AScene = registerElement('a-scene', {
               stencil: true,
               antialias: rendererConfig.antialias,
               premultipliedAlpha: true,
-              preserveDrawingBuffer: true,
+              preserveDrawingBuffer: false,
               powerPreference: 'default',
               xrCompatible: true
             });
